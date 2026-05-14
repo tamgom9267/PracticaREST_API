@@ -1,4 +1,5 @@
 import User from "../models/users.model.js";
+import { getSalt, hashPassword } from "../utils/hash.js";
 
 export const getUsers = async (req, res) => {
     // Implementation for getting all users
@@ -14,18 +15,27 @@ export const getUser = async (req, res) => {
 };
 
 export const createUser = async (req, res) => {
-    // Implementation for creating a new user
     const { name, username, password } = req.body;
-    const newUser = new User({ name, username, password });
+    const salt = getSalt();
+    const hashedPassword = hashPassword(password, salt);
+    const newUser = new User({ name, username, password: hashedPassword });
     await newUser.save();
     res.status(201).json(newUser);
 };
 
 export const putUser = async (req, res) => {
-    // Implementation for updating a user
     const { id } = req.params;
     const { name, username, password } = req.body;
-    const user = await User.findByIdAndUpdate(id, { name, username, password }, { new: true });
+    const updatedData = {};
+
+    if (name) updatedData.name = name;
+    if (username) updatedData.username = username;
+    if (password) {
+        const salt = getSalt();
+        updatedData.password = hashPassword(password, salt);
+    }
+
+    const user = await User.findByIdAndUpdate(id, updatedData, { new: true });
     res.json(user);
 };
 

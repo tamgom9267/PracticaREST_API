@@ -1,4 +1,6 @@
 import User from "../models/users.model.js";
+import { verifyPassword } from "../utils/hash.js";
+import jwt from "jsonwebtoken";
 
 export const login = async (req, res) => {
     try {
@@ -14,13 +16,14 @@ export const login = async (req, res) => {
             return res.status(401).json({login:false, msg: "Invalid credentials", user:{}});
         }
         
-        if (user.password === password) {
-            res.json({login:true, msg: "Login successful", user:user});
+        if (verifyPassword(password, user.password)) {
+            const token = jwt.sign({ sub: user._id }, process.env.JWT, { expiresIn: "1h" });
+            res.json({login:true, msg: "Login successful", user:user, token:token});
         } else {
             res.status(401).json({login:false, msg: "Invalid credentials", user:{}});
         }
     } catch (error) {
         console.error("Login error:", error);
-        res.status(500).json({login:false, msg: "Internal server error"});
+        res.status(500).json({login:false, msg: "Internal server error", user:{}, token:""});
     }
 }
